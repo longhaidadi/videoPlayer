@@ -1,0 +1,256 @@
+#ifndef VIDEOADDRESS_H_
+#define VIDEOADDRESS_H_
+
+#include <curl/curl.h>
+#include <string>
+#include <list>
+#include <numeric>
+#include <algorithm>
+//added by Louis 2012-09-05
+#include "videoaddressInterface.h"
+#include <iostream>
+using namespace videoaddressapi;
+using namespace std;
+#define DEFAULT_HTTP_USER_AGENT_FIREFOX	"Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20100101 Firefox/17.0"
+#define DEFAULT_HTTP_USER_AGENT_CHROME "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.95 Safari/537.4"
+#define DEFAULT_HTTP_USER_AGENT_VLC "vlc/1.1.11"
+#define DEFAULT_HTTP_USER_AGENT_FIREFOX_LINUX "Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Firefox/17.0"
+/*BASE*/
+struct video_part{
+    string url;
+    string seconds;
+    string size;
+};
+class videoaddressbase
+{
+    public:
+        videoaddressbase(){m_sSeconds="1";m_iParts=0;m_iHTTPTimeOut=50;m_use_m3u8=false;}
+        ~videoaddressbase(){}
+        bool GetWebPage(const string& sUrl,string &sContent,int type=0);
+        bool GetWebPage(const string& sUrl,string &sContent,const string& agent );
+        bool PostWebPage(const string& sUrl,const string& post,string &sContent,int type=0);
+        virtual int GetDownloadAddr(unsigned int)=0;
+        void PrintResultXML();
+
+        //added by Louis 2012-09-05
+        void PrintResultXML(string& svideoinfoxml);
+        //added by Louis 2012-09-05
+        void PrintResultXML(VideoInfo& videoinfo);
+        int ParseNumOutput(unsigned int);
+        void SetHttpTimeout(unsigned int);
+        void SetM3U8(bool flag){m_use_m3u8=flag;}
+        string GetRandomHash(int,int);
+        bool GetWebPagekankan(const string& sUrl,const string referer,string &sContent,const string& agent);
+    private:
+        static int write_callback(void *ptr, size_t size, size_t nmemb, void *stream);
+        static char errorBuffer[CURL_ERROR_SIZE];
+
+        //string m_sUrl;
+        //added
+    protected:		
+        string m_sSeconds;
+        unsigned int m_iParts;
+        vector<string> m_v_sFlvUrls;		
+        vector<string> m_v_sMp4Urls;
+        vector<string> m_v_sHDUrls;
+
+        vector<video_part> m_v_Parts;
+        unsigned int	m_iHTTPTimeOut;
+        bool	m_use_m3u8;
+        string	m_m3u8_content;
+        //vector<string> m_sPartSec;
+};
+
+
+
+
+class videoaddressfunshion:public videoaddressbase
+{
+    public:
+        videoaddressfunshion(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddressfunshion(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+        int Get_sourcetype_m3u8(string & );
+        int Get_sourcetype_mp4(string &);
+        int Get_sourcetype_mp4_2(string &);
+    private:
+        string m_sUrl;
+    private:
+};
+
+class videoaddresspptv:public videoaddressbase
+{
+    public:
+        videoaddresspptv(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresspptv(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+    private:
+        string m_sUrl;
+    private:
+};
+
+/*class videoaddressyoutube:public videoaddressbase
+  {
+  public:
+  videoaddressyoutube(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+  virtual ~videoaddressyoutube(){}
+  int GetDownloadAddr(unsigned int return_num=0);
+
+  private:
+  string m_sUrl;
+  private:
+  list<string> split(string str,string pattern);
+  int contain(list<string>list_canshu,string target,int &fir_pos,int &count,list<string> & list_value);
+  string merge(list<string>list_canshu);
+  string &replace_all_distinct(string &str,const string &old_value,const string & new_value);
+  void delete_repeat_canshu(list<string>&list_canshu);
+  void add_canshu(list<string>&list_canshu,string target);
+  void delete_canshu(list<string>&list_canshu,string target);
+  void Result(list<string>list_canshu,string head ,list<string>&urls);
+  void output(list<string>urls);
+  int itag_divide(list<string>&list_canshu,string head,list<string>&list);
+  int get_url_type(list<string> urls , string & result,string type,string &clen,string & dur);
+  int get_info(string source,string target, string & result);
+
+  };*/
+class videoaddressmfengyun:public videoaddressbase
+{
+    public:
+        videoaddressmfengyun(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddressmfengyun(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+
+
+    private:
+        string m_sUrl;
+};
+
+
+class videoaddressiqiyi:public videoaddressbase
+{
+
+    public:
+        videoaddressiqiyi(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddressiqiyi(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+        int GetDownloadAddr_interface( video_part & playurl_info);
+        int Get_playurlByvd( string  htmlcontent,video_part & urlinfo,int vd=1,int type=0);// vd =96,2,1  type:m3u8=0 mp4=1;
+        int Get_vid(const string& htmlcontent,string & vid);
+    private:
+        string m_sUrl;
+
+};
+
+class videoaddresstudou:public videoaddressbase
+{
+    public:
+        videoaddresstudou(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresstudou(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+
+
+    private:
+        string m_sUrl;
+};
+class videoaddresspcbaby:public videoaddressbase
+{
+    public:
+        videoaddresspcbaby(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresspcbaby(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+
+    private:
+        string m_sUrl;
+
+};
+class videoaddressbabycenter:public videoaddressbase
+{
+    public:
+        videoaddressbabycenter(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddressbabycenter(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+
+        string replace_all_distinct(string &str,const string &old_value,const string & new_value);
+
+    private:
+        string m_sUrl;
+
+};
+
+class videoaddresswasu:public videoaddressbase
+{
+    public:
+        videoaddresswasu(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresswasu(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+
+
+    private:
+        string m_sUrl;
+
+};
+class videoaddressku6:public videoaddressbase
+{
+    public:
+        videoaddressku6(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddressku6(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+
+        string  replace_all_distinct(string &str,const string &old_value,const string & new_value);
+    private:
+        string m_sUrl;
+
+};
+
+
+class videoaddresskankan:public videoaddressbase
+{
+    public:
+        videoaddresskankan(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresskankan(){}
+        int GetDownloadAddr(unsigned int return_num=0); 
+    private:
+        string m_sUrl;
+    private:
+        string GetGID(const string& url);
+        string GetUrl(const string& content,int index);
+};
+class videoaddresspps:public videoaddressbase
+{
+    public:
+        videoaddresspps(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresspps(){}
+        int GetDownloadAddr(unsigned int return_num=0); 
+    private:
+        string m_sUrl;
+    private:
+};
+class videoaddresscntv:public videoaddressbase
+{
+    public:
+        videoaddresscntv(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresscntv(){}
+        int GetDownloadAddr(unsigned int return_num=0);
+    private:
+        string m_sUrl;
+};
+
+typedef struct SohuInfo{
+    string clipsUrl;
+    int clipsBytes;
+    int clipsDuration;
+    string su;
+}SohuInfo;
+
+class videoaddresssohu:public videoaddressbase
+{
+    public:
+        videoaddresssohu(string sUrl):m_sUrl(sUrl),videoaddressbase(){}
+        virtual ~videoaddresssohu(){}
+        int GetDownloadAddr(unsigned int return_num =0);
+        string GetVidFromUrlcontent();
+        int parsesohujson(const string htmlcontent,vector<SohuInfo>&m_vectors);
+    private:
+        string m_sUrl;
+};
+#endif

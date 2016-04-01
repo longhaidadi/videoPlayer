@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+./include/videoaddressInterface.h
+string
+-
+vector
+-
+
+/home/ylf/work-place/videoaddresspart/test_lib.cpp
+videoaddressInterface.h
+/home/ylf/work-place/videoaddresspart/videoaddressInterface.h
+iostream
+-
+stdlib.h
+-
+stdio.h
+-
+

@@ -1,0 +1,388 @@
+#include"videoaddress.h"
+#include "json/value.h"
+#include "json/json.h"
+#include "urlcode.h"
+#include "utility.h"
+#include <iostream>
+#include <cassert>
+
+#include <cstring>
+#include <sstream>
+#include <fstream>
+
+
+//int videoaddressletv::GetDownloadAddr(unsigned int  return_num)
+//{
+//	string vid;
+//	string sUrl;
+//	if(get_vid(vid) == -1)
+//		return -1;
+//	sUrl = "www.letv.com/v_xml/" + vid + ".xml";
+//	//cout << sUrl << endl;
+//
+//	string sContent;
+//	bool bCode = GetWebPage(sUrl,sContent);
+//	if (bCode == false)
+//	{
+//		cout << "videoaddressletv::GetWebPage "  <<  sUrl << " failed!!!"  << endl;
+//		return -1;
+//	}
+//	bool has_high= false;
+//	if(sContent.find("high=")!=string::npos){
+//		has_high = true;
+//	}
+//	string low_link,high_link;
+//	if(has_high)
+//		low_link = GetBetween(sContent,"low=","&high=");
+//	else
+//		low_link = GetBetween(sContent,"low=","]");
+//
+//	if(low_link.empty()){
+//		cout << "videoaddressletv::Getxml low link error " << endl;
+//		return -1;
+//	}
+//	low_link = UrlDecode(low_link);
+//	//cout << low_link <<endl;
+//	if(has_high){
+//		high_link = GetBetween(sContent,"high=","]");
+//		if(high_link.empty()){
+//			cout << "videoaddressletv::Getxml low link error " << endl;
+//			return -1;
+//		}
+//		high_link = UrlDecode(high_link);
+//	}
+//
+//	string duration = GetBetween(sContent,"\"duration\":",",");
+//	if(duration.empty()){
+//		cout << "videoaddressletv::Get duration error " << endl;
+//		return -1;
+//	}
+//	if(duration[0]=='\"'){
+//		duration =duration.substr(1,duration.size()-2);
+//	}
+//	m_sSeconds = duration;
+//
+//
+//	bCode = GetWebPage(low_link,sContent);
+//	if (bCode == false)
+//	{
+//		cout << "videoaddressletv::GetWebPage "  <<  low_link << " failed!!!"  << endl;
+//		return -1;
+//	}
+//
+//	string low_data_ex = GetBetween(sContent,"\"location\": \"","\"");
+//
+//	string low_data;
+//	for(unsigned int i = 0; i< low_data_ex.size();i++){
+//		if(low_data_ex[i]!='\\')
+//			low_data +=low_data_ex[i];
+//	}
+//
+//	m_v_sFlvUrls.push_back(low_data);
+//	m_iParts = m_v_sFlvUrls.size();
+//
+//	if(has_high){
+//		bCode = GetWebPage(high_link,sContent);
+//		if (bCode == false)
+//		{
+//			cout << "videoaddressletv::GetWebPage "  <<  high_link << " failed!!!"  << endl;
+//			return -1;
+//		}
+//		string high_data_ex = GetBetween(sContent,"\"location\": \"","\"");
+//		string high_data;
+//		for(unsigned int i = 0; i< high_data_ex.size();i++){
+//			if(high_data_ex[i]!='\\')
+//				high_data +=high_data_ex[i];
+//		}
+//		
+//		m_v_sHDUrls.push_back(high_data);
+//	}
+//
+//
+//	if(ParseNumOutput(return_num)==0)
+//		return 0;
+//	else 
+//		return -1;
+//
+//	return 0;
+//}
+
+
+//int videoaddressletv::GetDownloadAddr(unsigned int  return_num)
+//{
+//	
+//	string vid;
+//	string sUrl;
+//	if(get_vid(vid) == -1)
+//		return -1;
+//	sUrl = "www.letv.com/v_xml/" + vid + ".xml";
+//	cout << sUrl << endl;
+//
+//	string sContent;
+//	bool bCode = GetWebPage(sUrl,sContent);
+//	if (bCode == false)
+//	{
+//		cout << "videoaddressletv::GetWebPage "  <<  sUrl << " failed!!!"  << endl;
+//		return -1;
+//	}
+//	bool has_high= false;
+//
+//
+//	string video_key; 
+//	if(sContent.find("1000\":")!=string::npos){
+//		has_high = true;
+//		video_key = "1000\":[\"";
+//	}else if(sContent.find("350\":")!=string::npos){
+//		has_high = false;
+//		video_key = "350\":[\"";
+//	}else
+//		return -1;
+//	string link;
+//
+//	link = GetBetween(sContent,video_key,"\"");
+//
+//	if(memcmp(link.c_str(),"http:",5)!=0)
+//		return -1;
+//	string low_data;
+//	for(unsigned int i = 0; i< link.size();i++){
+//		if(link[i]!='\\')
+//			low_data +=link[i];
+//	}
+//
+//	string duration =  GetBetween(sContent,"duration\":\"","\"");
+//	if(!duration.empty())
+//		m_sSeconds = duration;
+//
+//	m_v_sFlvUrls.push_back(low_data);
+//	m_iParts = m_v_sFlvUrls.size();
+//
+//	if(ParseNumOutput(return_num)==0)
+//		return 0;
+//	else 
+//		return -1;
+//
+//	return 0;
+//}
+
+//int videoaddressletv::GetDownloadAddr(unsigned int  return_num)
+//{
+//	
+//	string vid;
+//	string sUrl;
+//	if(get_vid(vid) == -1)
+//		return -1;
+//	sUrl = "www.letv.com/v_xml/" + vid + ".xml";
+//	cout << sUrl << endl;
+//
+//	string sContent;
+//	bool bCode = GetWebPage(sUrl,sContent);
+//	if (bCode == false)
+//	{
+//		cout << "videoaddressletv::GetWebPage "  <<  sUrl << " failed!!!"  << endl;
+//		return -1;
+//	}
+//
+//	bool has_high;
+//	string video_key; 
+//	if(sContent.find("1000\":")!=string::npos){
+//		has_high = true;
+//		video_key = "1000\":[\"";
+//	}else if(sContent.find("350\":")!=string::npos){
+//		has_high = false;
+//		video_key = "350\":[\"";
+//	}else
+//		return -1;
+//
+//	string link;
+//
+//	size_t bpos,epos;
+//	epos=0;
+//	string low_data;
+//	while(true){
+//		low_data.clear();
+//		if((bpos =  sContent.find(video_key,epos))==string::npos)
+//			break;
+//		if((epos = sContent.find('"',bpos+video_key.size()+1))==string::npos)
+//			break;
+//		string sub_content = sContent.substr(bpos+video_key.size(),epos-bpos-video_key.size());
+//		
+//		for(unsigned int i = 0; i< sub_content.size();i++){
+//			if(sub_content[i]!='\\')
+//				low_data +=sub_content[i];
+//		}
+//		if(memcmp(low_data.c_str(),"http",4)==0 && isdigit(low_data[7]))
+//			break;
+//
+//		epos++;
+//	}
+//
+//	string duration =  GetBetween(sContent,"duration\":\"","\"");
+//	if(!duration.empty())
+//		m_sSeconds = duration;
+//	
+//	m_v_sFlvUrls.push_back(low_data);
+//	m_iParts = m_v_sFlvUrls.size();
+//
+//	if(ParseNumOutput(return_num)==0)
+//		return 0;
+//	else 
+//		return -1;
+//
+//	return 0;
+//}
+int videoaddressletv::get_vid(string & vid)
+{
+    string sContent;
+    bool bCode = GetWebPage(m_sUrl,sContent);
+    if (bCode == false)
+    {
+        cout << "videoaddressletv::GetWebPage "  <<  m_sUrl << " failed!!!"  << endl;
+        return -1;
+    }
+    vid = GetBetween(sContent,"vid:",",");
+    if(vid.empty()){
+        cout << "videoaddressletv::Getvid error " << endl;
+        return -1;
+    }
+    return 0;
+}
+
+string videoaddressletv::get_v(const string & content)
+{
+    string vidlist = GetBetween(content,"{v:[","]");
+    if(vidlist.empty()){
+        cout << "videoaddressletv::Getvid error " << endl;
+        return "";
+    }
+    string vid;
+    size_t bpos;
+    size_t epos = 0;
+    while(true){
+        string tmpvid;
+        bpos = vidlist.find('\"',epos);
+        epos = vidlist.find('\"',bpos+1);
+        if(bpos == string::npos || epos == string::npos)
+            break;
+        tmpvid = vidlist.substr(bpos+1,epos-bpos-1);
+        if(!tmpvid.empty())
+            vid = tmpvid;
+        epos = epos+1;
+    }
+    return vid;
+}
+int videoaddressletv::GetDownloadAddr(unsigned int  return_num){
+
+    string sContent;
+    bool bCode = GetWebPage(m_sUrl,sContent);
+    if (bCode == false)
+    {
+        cout << "videoaddressletv::GetWebPage "  <<  m_sUrl << " failed!!!"  << endl;
+        return -1;
+    }
+    string vid =get_v(sContent);
+    cout<<vid<<endl;
+    if(!vid.empty()){
+        string tmp_url;
+        CBase64::Decode(vid,tmp_url);
+        size_t bpos = tmp_url.find_last_of('/');
+        size_t epos = tmp_url.find_last_of('?');
+        if(bpos == string::npos || epos == string::npos)
+            return -1;
+
+        string url64 = tmp_url.substr(bpos+1,epos-bpos-1);
+
+        string url;
+        CBase64::Decode(url64,url);
+        m_v_sHDUrls.push_back("http://g3.letv.cn/"+url);
+    }else
+    {
+        string sUrl;
+        if(get_vid(vid) == -1)
+            return -1;
+        sUrl = "www.letv.com/v_xml/" + vid + ".xml";
+        cout<<sUrl<<endl;
+        string sContent;
+        bool bCode = GetWebPage(sUrl,sContent);
+        if (bCode == false)
+        {
+            cout << "videoaddressletv::GetWebPage "  <<  sUrl << " failed!!!"  << endl;
+            return -1;
+        }
+
+        bool has_high;
+        string video_key; 
+        if(sContent.find("1000\":")!=string::npos){
+            has_high = true;
+            video_key = "1000\":[\"";
+        }else if(sContent.find("350\":")!=string::npos){
+            has_high = false;
+            video_key = "350\":[\"";
+        }else
+            return -1;
+
+        string link;
+
+        size_t bpos,epos;
+        epos=0;
+        string low_data;
+        while(true){
+            low_data.clear();
+            if((bpos =  sContent.find(video_key,epos))==string::npos)
+                break;
+            if((epos = sContent.find('"',bpos+video_key.size()+1))==string::npos)
+                break;
+            string sub_content = sContent.substr(bpos+video_key.size(),epos-bpos-video_key.size());
+            for(unsigned int i = 0; i< sub_content.size();i++){
+                if(sub_content[i]!='\\')
+                    low_data +=sub_content[i];
+            }
+            if(memcmp(low_data.c_str(),"http",4)==0 && isdigit(low_data[7]))
+                break;
+            epos++;
+        }
+        size_t tss_pos = low_data.find("tss=");
+        if(tss_pos==string::npos)
+        {   
+            if(m_use_m3u8)
+            {
+                low_data = low_data+"tss=ios";   
+            }
+            else
+            {
+
+                low_data= low_data+"tss=no";
+            }
+        }
+        else
+        {
+            size_t pos_back = low_data.find("&",tss_pos+1);
+            if(pos_back!=string::npos)
+            {   
+                low_data = low_data.substr(0,tss_pos)+low_data.substr(pos_back);
+            }
+            else low_data = low_data.substr(0,tss_pos);
+            
+            if(m_use_m3u8)
+            {
+                low_data = low_data+"tss=ios";
+
+            }
+            else
+
+            {
+                low_data = low_data+"tss=no";
+            }
+        }
+
+        string duration =  GetBetween(sContent,"duration\":\"","\"");
+        if(!duration.empty())
+            m_sSeconds = duration;
+        m_v_sHDUrls.push_back(low_data);
+    }
+    m_iParts = m_v_sHDUrls.size();
+
+    if(ParseNumOutput(return_num)==0)
+        return 0;
+    else 
+        return -1;
+}

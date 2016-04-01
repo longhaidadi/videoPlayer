@@ -1,0 +1,1 @@
+/usr/bin/c++    -O0 -Wall -g2 -ggdb    CMakeFiles/video.dir/test_lib.cpp.o  -o src/video -rdynamic src/libvideoaddress.a -lcurl src/json/libjson.a 

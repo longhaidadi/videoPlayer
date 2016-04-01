@@ -1,0 +1,168 @@
+#include"videoaddress.h"
+#include "json/value.h"
+#include "json/json.h"
+#include "urlcode.h"
+#include "utility.h"
+#include <iostream>
+
+#include <cstring>
+
+int videoaddressfunshion::Get_sourcetype_m3u8(string & play_url){
+
+    string htmlcontent;
+    if(GetWebPage(m_sUrl,htmlcontent)==false)
+    {
+        return -1;
+    }
+    string  video_id = GetBetween(htmlcontent,"\"mediaid\":\"","\"");
+    string   number_id = GetBetween(htmlcontent,"minfo.playNumber = \'","\'");
+    if(video_id.empty()){
+        return -1;
+    }
+
+
+    if(number_id.empty()){
+        number_id = "1";
+    }
+
+    string number_id_tag = "\"number\":\""+number_id+"\"";
+    string iphone_url = "http://jsonfe.funshion.com/media/?cli=iphone&ver=0.0.0.1&ta=0&mid="+video_id;
+
+    bool bcode = GetWebPage(iphone_url,htmlcontent);
+
+    if(false == bcode ){
+
+        return -1;
+    }
+
+    size_t number_id_pos = htmlcontent.find(number_id_tag);
+
+    if(number_id_pos==string::npos)return -1;
+    else
+    {
+        htmlcontent = htmlcontent.substr(number_id_pos);
+    }
+
+    string m3u8_content = GetBetween(htmlcontent,"\"url\":\"","\"");
+    if( m3u8_content.empty())return -1;
+
+    play_url="";
+    for(int i =0 ; i< m3u8_content.length();i++)
+        if(m3u8_content[i]!='\\')
+            play_url = play_url+m3u8_content[i];
+    return 0;
+}
+
+int  videoaddressfunshion::Get_sourcetype_mp4(string & play_url){
+
+
+    string htmlcontent;
+    if(GetWebPage(m_sUrl,htmlcontent)==false)
+    {
+        return -1;
+    }
+    /*
+        video_id 
+    */
+    string  video_id = GetBetween(htmlcontent,"\"mediaid\":",",");
+    if(video_id.find("\"")!=string::npos){
+        video_id = GetBetween(video_id,"\"","\"");
+    }
+    /*
+        number_id
+    */
+    string  number_id = GetBetween(htmlcontent,"minfo.playNumber = \'","\'");
+    if(number_id.empty()){
+        number_id = GetBetween(htmlcontent,"currentid : ",",");
+        if(number_id=="0"){
+            number_id= GetBetween(htmlcontent,"\"number\":\"","\"");    
+        }
+    }
+    string json_url="";
+    /* 
+        hash_id
+    */
+    
+    /*
+        json_url
+    */
+    string hashid = GetBetween(htmlcontent,"\"hashid\":\"","\"");
+    if(!hashid.empty()){
+
+         json_url = "http://jobsfe.funshion.com/query/v1/mp4/"+hashid+".json";
+
+    }
+    else {
+
+        if(number_id.empty()){
+            number_id = "1";
+        }
+        string number_id_tag = "\"number\":\""+number_id+"\"";
+        string mp4_url = "http://api.funshion.com/ajax/get_web_fsp/"+video_id+"/mp4";
+        cout<<mp4_url<<endl;
+        bool bcode = GetWebPage(mp4_url,htmlcontent);
+
+        if(false == bcode ){
+
+            return -1;
+        }
+
+        size_t number_id_pos = htmlcontent.find(number_id_tag);
+
+        if(number_id_pos==string::npos)return -1;
+        else
+        {
+            htmlcontent = htmlcontent.substr(number_id_pos);
+        }
+
+        cout<<htmlcontent<<endl;
+        string hashid = GetBetween(htmlcontent,"\"hashid\":\"","\"");
+        if(hashid.empty()){
+            return -1;
+        }
+        json_url = "http://jobsfe.funshion.com/query/v1/mp4/"+hashid+".json";
+
+
+    }
+    cout<<json_url<<endl;
+    if(GetWebPage(json_url,htmlcontent)==false){
+        return -1;
+    }
+
+    string playurl=GetBetween(htmlcontent,"http","\"");
+    if(playurl.empty())
+        return -1;
+
+    play_url="http";
+    for(int i =0 ; i< playurl.length();i++)
+        if(playurl[i]!='\\')
+            play_url = play_url+playurl[i];
+
+    return 0;
+}
+
+int videoaddressfunshion::GetDownloadAddr(unsigned int  return_num)
+{
+
+    string play_url;
+    if(!m_use_m3u8){
+            if(-1==Get_sourcetype_mp4(play_url))
+                return -1;
+    }     
+    else 
+    {
+        if(-1==Get_sourcetype_m3u8(play_url))
+            return -1;
+    }
+    m_sSeconds = "1";
+    m_v_sHDUrls.push_back(play_url);
+
+    m_iParts =  m_v_sHDUrls.size();
+
+    if(ParseNumOutput(return_num)==0)
+        return 0;
+    else
+        return -1;
+}
+
+

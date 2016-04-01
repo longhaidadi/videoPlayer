@@ -1,0 +1,338 @@
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <stdio.h>
+#include "videoaddress.h"
+
+#include <list>
+#include <numeric>
+#include <algorithm>
+#include "videoaddressInterface.h"
+
+using namespace std;
+
+string deescapeURL( string &str);
+int videoaddressyoutube::GetDownloadAddr(unsigned int  return_num){
+
+	string htmlcontent;
+	string value;
+
+
+	bool bcode = GetWebPage(m_sUrl,htmlcontent, DEFAULT_HTTP_USER_AGENT_FIREFOX);
+	if (false == bcode)
+	{
+		return -1;
+	}
+
+
+	size_t pos_start = htmlcontent.find("<script>var ytplayer = ytplayer");
+	size_t pos_end =htmlcontent.find("</script>");
+	if(string::npos==pos_start||string::npos==pos_end)return -1;
+	string oper_str_value = htmlcontent.substr(pos_start,pos_end-pos_start);
+
+	size_t url_start = oper_str_value.find("args");
+	size_t url_end =oper_str_value.find("</script>");
+	if(string::npos==url_start||string::npos==url_end)return -1;
+	string urls_str = oper_str_value.substr(url_start,url_end-url_start);
+
+
+	list<string>list_urls = split(urls_str,"url=");
+	list<string>::iterator urlit; 
+	list<string>urls;
+	for (urlit = list_urls.begin(); urlit != list_urls.end(); ++urlit)
+	{       
+
+		string url_content = *urlit;
+		url_content=deescapeURL(url_content);
+		size_t fenhao_pos = url_content.find(";");
+		if(fenhao_pos!=string::npos)
+			url_content=url_content.substr(0,fenhao_pos);
+
+		string download_url_f = replace_all_distinct(url_content,",","&");
+		string download_url_s=replace_all_distinct(download_url_f,"\\u0026","&");
+		string download_url=replace_all_distinct(download_url_s,"sig=","signature=");
+
+
+		size_t head_pos = download_url.find("?");
+		if(head_pos==string::npos)continue;
+		string head = download_url.substr(0,head_pos);
+
+
+		string canshu_content = download_url.substr(head_pos+1,download_url.length()-head_pos-1);
+		if(canshu_content.empty())continue;
+		size_t canshu_content_length = canshu_content.length();
+		if(canshu_content.substr(canshu_content_length-1,1)=="&")
+			canshu_content=canshu_content.substr(0,canshu_content_length-1);
+
+		list<string>list_canshu = split(canshu_content,"&");
+		int fir_pos=0;int count=0;list<string> valuelist;
+
+		if(contain(list_canshu,"range=",fir_pos,count,valuelist)==1)
+			delete_canshu(list_canshu,"range=");
+		if(contain(list_canshu,"init=",fir_pos,count,valuelist)==1)
+			delete_canshu(list_canshu,"init=");
+		if(contain(list_canshu,"index=",fir_pos,count,valuelist)==1)
+			delete_canshu(list_canshu,"index=");
+
+		if(contain(list_canshu,"signature=",fir_pos,count,valuelist)==0) continue;
+		if(contain(list_canshu,"http",fir_pos,count,valuelist)==1&&count>1)continue;	
+		if(contain(list_canshu,":",fir_pos,count,valuelist)==1&&count>1)continue;
+
+		list_canshu.sort();
+		list_canshu.unique();
+		if(itag_divide(list_canshu,head,urls)==1)continue;
+		Result( list_canshu, head ,urls);
+
+
+
+	}
+
+	video_part vpt_video,vpt_audio;
+	string play_url_video,seconds_video,size_video;
+
+	//get_max_result(urls,"video",seconds_video,size_video,play_url_video);
+	bool flag=false;
+
+	if(get_url_type(urls,play_url_video,"video/x-flv",size_video,seconds_video))flag=true;
+	if(!flag&&get_url_type(urls,play_url_video,"video/3gpp",size_video,seconds_video))flag=true;
+	if(!flag&&get_url_type(urls,play_url_video,"video/mp4",size_video,seconds_video))
+	{
+		string play_url_audio,seconds_audio,size_audio;
+		get_url_type(urls,play_url_audio,"audio/mp4",size_audio,seconds_audio);
+		vpt_video.url = play_url_video;
+		vpt_video.seconds = seconds_video;
+		vpt_video.size = size_video;
+		m_v_Parts.push_back(vpt_video);
+		vpt_audio.url = play_url_audio;
+		vpt_audio.seconds = seconds_audio;
+		vpt_audio.size = size_audio;
+		m_v_Parts.push_back(vpt_audio);
+		return 0;
+
+	}
+	vpt_video.url = play_url_video;
+	vpt_video.seconds = seconds_video;
+	vpt_video.size = size_video;	
+	m_v_Parts.push_back(vpt_video);
+
+
+	return 0;
+}
+
+int   videoaddressyoutube::get_url_type(list<string> urls , string & result,string type,string &clen,string & dur){
+	list<string>::iterator it = urls.begin();
+	for (;it!=urls.end();++it){
+		result = *it ;
+		if(result.find(type)!=string::npos)break;
+	}
+	if(get_info(result,"clen=",clen)==-1) clen = "";
+	if(get_info(result,"dur=",dur)==-1) dur = "";
+
+	if(it==urls.end())return 0;
+	return 1;
+
+
+
+
+}
+int   videoaddressyoutube::get_info(string url,string target, string & result){
+	if(url.find(target)!=string::npos)
+	{
+		size_t pos_1 = url.find(target);
+		if(pos_1==string::npos)return -1;
+		string mid_url = url.substr(pos_1);
+		size_t pos_2 = mid_url.find("&");
+		if(pos_2==string::npos)return -1;
+		result=mid_url.substr(target.length(),pos_2-target.length());
+
+	}
+}
+
+list<std::string> videoaddressyoutube::split(string str,string pattern)
+{
+	std::string::size_type pos;
+	std::list<std::string> result;
+	str+=pattern;
+	int size=str.size();
+	for(int i=0; i<size; i++)
+	{
+		pos=str.find(pattern,i);
+		if(pos<size)
+		{
+
+			std::string s=str.substr(i,pos-i);
+			result.push_back(s);
+			i=pos+pattern.size()-1;                                                                                                            }
+
+	}
+	return result;
+}
+
+int videoaddressyoutube::contain(list<string>list_canshu,string target,int &fir_pos,int &count,list<string> &list_value){
+	list<string>::iterator canshuit;
+	fir_pos=count=0;
+	int pos=0;
+
+	for (canshuit = list_canshu.begin(); canshuit != list_canshu.end(); ++canshuit)
+	{
+		string canshu = (*canshuit);
+		size_t pos_t = canshu.find(target);
+		if(pos_t!=string::npos)
+		{   
+
+			list_value.push_back(canshu);
+
+			count++;
+
+		}
+
+		pos++;
+	}
+
+	fir_pos=pos;
+	if(count!=0)return 1;
+	return 0;
+}
+string videoaddressyoutube::merge(list<string>list_canshu){
+	list<string>::iterator canshuit;
+	string download_url="";
+	for (canshuit = list_canshu.begin(); canshuit != list_canshu.end(); ++canshuit)
+	{
+		string canshu = (*canshuit);
+		download_url +=canshu;
+		download_url +="&";
+	}
+	download_url = download_url.substr(0,download_url.length()-1);
+	return download_url;
+}
+
+string &videoaddressyoutube::replace_all_distinct(string &str,const string &old_value,const string & new_value){
+	for (string::size_type pos(0);pos!=string::npos; pos+=new_value.length() )
+	{
+		if((pos=str.find(old_value,pos))!=string::npos)str.replace(pos,old_value.length(),new_value);
+		else break;
+	}
+	return str;
+}
+
+
+void videoaddressyoutube::add_canshu(list<string>&list_canshu,string target){
+	list_canshu.push_back(target);
+}
+
+void videoaddressyoutube::delete_canshu(list<string>&list_canshu,string target){
+	int fir_pos=0;
+	int count=0;
+	list<string> value;
+	if(contain(list_canshu,target,fir_pos,count,value)){
+
+
+		list<string>::iterator canshuit;
+
+		for (canshuit = value.begin(); canshuit != value.end(); ++canshuit)
+		{
+			list_canshu.remove(*canshuit);
+		}
+
+	}
+}
+
+void videoaddressyoutube::Result(list<string>list_canshu,string head,list <string>& result_list){
+	string canshu = merge(list_canshu);
+	string download = head+"?"+canshu;
+	result_list.push_back(download);
+}
+void videoaddressyoutube::output(list<string>urls){
+	int url_size = 1;
+	for(list<string>::iterator it = urls.begin();it!=urls.end();++it)
+	{
+		cout<<"**************************"<<endl;
+		cout<<"now your loactin is :"<<url_size++<<endl;
+		cout<<*it<<endl;
+
+	}
+
+}
+char dec2hexChar(short int n) {
+	if ( 0 <= n && n <= 9 ) {
+		return char( short('0') + n );
+	} else if ( 10 <= n && n <= 15 ) {
+		return char( short('A') + n - 10 );
+	} else {
+		return char(0);
+	}
+}
+
+short int hexChar2dec(char c) {
+	if ( '0'<=c && c<='9' ) {
+		return short(c-'0');
+	} else if ( 'a'<=c && c<='f' ) {
+		return ( short(c-'a') + 10 );
+	} else if ( 'A'<=c && c<='F' ) {
+		return ( short(c-'A') + 10 );
+	} else {
+		return -1;
+	}
+}
+
+string escapeURL(const string &URL)
+{
+	string result = "";
+	for ( unsigned int i=0; i<URL.size(); i++ ) {
+		char c = URL[i];
+		if (
+				( '0'<=c && c<='9' ) ||
+				( 'a'<=c && c<='z' ) ||
+				( 'A'<=c && c<='Z' ) ||
+				c=='/' || c=='.'
+		   ) {
+			result += c;
+		} else {
+			int j = (short int)c;
+			if ( j < 0 ) {
+				j += 256;
+			}
+			int i1, i0;
+			i1 = j / 16;
+			i0 = j - i1*16;
+			result += '%';
+			result += dec2hexChar(i1);
+			result += dec2hexChar(i0);
+		}
+	}
+	return result;
+}
+
+string deescapeURL( string &URL) {
+	string result = "";
+	for ( unsigned int i=0; i<URL.size(); i++ ) {
+		char c = URL[i];
+		if ( c != '%' ) {
+			result += c;
+		} else {
+			char c1 = URL[++i];
+			char c0 = URL[++i];
+			int num = 0;
+			num += hexChar2dec(c1) * 16 + hexChar2dec(c0);
+			result += char(num);
+		}
+	}
+	return result;
+}
+int videoaddressyoutube::itag_divide(list<string>&list_canshu,string head,list<string>&urls){
+	int fir_pos=0;int count=0;list<string> valuelist;
+	if(contain(list_canshu,"itag=",fir_pos,count,valuelist)==1&&count==2)
+	{
+		list<string>::iterator itagit=valuelist.begin();
+
+
+		delete_canshu(list_canshu,"itag=");
+		list<string>temp_list = list_canshu;
+		add_canshu(list_canshu,*itagit++);
+		Result( list_canshu, head ,urls);
+		
+		return 1;
+	}
+	return 0;
+}
+

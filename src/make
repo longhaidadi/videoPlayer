@@ -1,0 +1,185 @@
+#include"videoaddress.h"
+#include "json/value.h"
+#include "json/json.h"
+#include "urlcode.h"
+#include "utility.h"
+#include <iostream>
+#include <cassert>
+
+#include <cstring>
+#include <sstream>
+#include <fstream>
+
+/************************************************************************/
+/* kankan*/
+/************************************************************************/
+
+
+int videoaddressfunshion::GetDownloadAddr(unsigned int  return_num)
+{
+	string tmp_url = m_sUrl;
+
+	size_t pos = tmp_url.find_last_of("?");
+	if(pos != string::npos){
+		tmp_url = tmp_url.substr(0,pos);
+	}
+	pos = tmp_url.find("play");
+	if(pos ==string::npos)
+		return -1;
+	string ajax_url;
+	string playurl;
+
+	if(tmp_url.find("subject")==string::npos){
+		ajax_url = "http://api.funshion.com/ajax/get_media_data/video/" + tmp_url.substr(pos+4);
+        cout<<ajax_url<<endl;
+		string htmlcontent;
+		bool bcode = GetWebPage(ajax_url,htmlcontent);
+		if (false == bcode)
+		{
+			return -1;
+		}
+
+        cout<<htmlcontent<<endl;
+		string hashid;
+		string filename;
+
+		if(GetSingleInfo(htmlcontent,2,hashid,filename)==-1)
+			return -1;
+		string rkey = GetRandomHash(32,1);
+		string json_url = "http://jobsfe.funshion.com/query/v1/mp4/" + hashid + ".json?file=" + filename + "&clifz=fun&mac="+rkey;
+		bcode = GetWebPage(json_url,htmlcontent);
+		if (false == bcode)
+		{
+			return -1;
+		}
+		cout << json_url << endl;
+        cout<<htmlcontent<<endl;
+		string tmpurl = GetBetween(htmlcontent,"urls\":[\"","\"");
+		if(tmpurl.empty())
+			return -1;
+		cout << tmpurl << endl;
+		for(unsigned int i = 0 ; i < tmpurl.size(); i++){
+			if(tmpurl[i]!='\\')
+				playurl.push_back(tmpurl[i]);
+		}
+		m_sSeconds = "1";
+
+	}else{
+
+		ajax_url = "http://api.funshion.com/ajax/get_webplayinfo/" + tmp_url.substr(pos+5)+ "/mp4";
+        cout<<ajax_url<<endl;
+
+        cout<<htmlcontent<<endl;
+		string htmlcontent;
+		bool bcode = GetWebPage(ajax_url,htmlcontent);
+		if (false == bcode)
+		{
+			return -1;
+		}
+		string cid;
+		string bits;
+		string seconds;
+		if(GetInfo(htmlcontent,2,cid,bits,seconds)==-1)
+			return -1;
+		string rkey = GetRandomHash(32,1);
+		string json_url = "http://jobsfe.funshion.com/query/v1/mp4/" + cid + ".json?bits=" + bits + "&clifz=fun&mac="+rkey;
+        cout<<json_url<<endl;
+		bcode = GetWebPage(json_url,htmlcontent);
+		if (false == bcode)
+		{
+			return -1;
+		}
+        
+		string tmpurl = GetBetween(htmlcontent,"urls\":[\"","\"");
+		if(tmpurl.empty())
+			return -1;
+		for(unsigned int i = 0 ; i < tmpurl.size(); i++){
+			if(tmpurl[i]!='\\')
+				playurl.push_back(tmpurl[i]);
+		}
+		if(!seconds.empty())
+			m_sSeconds = seconds;
+		else
+			m_sSeconds = "1";
+	}
+	
+	m_v_sHDUrls.push_back(playurl);
+
+	m_iParts =	m_v_sHDUrls.size();
+
+	if(ParseNumOutput(return_num)==0)
+		return 0;
+	else 
+		return -1;
+
+}
+int videoaddressfunshion::GetInfo(const string& content,unsigned int index,string& cid, string& bits,string & seconds){
+	Json::Reader reader;
+    Json::Value root;
+
+    if (!reader.parse(content, root, false)){
+		return -1;
+	}
+	string tmp_cid,max_cid;
+	string tmp_byterate,max_byterate;
+	string tmp_seconds;
+	max_cid = "";
+	max_byterate = "";
+
+	const Json::Value arrayObj = root["playinfos"];
+
+	if(arrayObj.size()==0)
+		return -1;
+	for (unsigned int i = 0; i < arrayObj.size() && i <= index; i++){
+		tmp_cid = arrayObj[i]["cid"].asString();
+		tmp_byterate = arrayObj[i]["byterate"].asString();
+		tmp_seconds = arrayObj[i]["timelength"].asString() ;
+		if(!tmp_seconds.empty()){
+			seconds = tmp_seconds;
+		}
+		if(max_cid == ""){
+			max_cid = tmp_cid;
+			max_byterate = tmp_byterate;
+		}else{
+			int t1 = 0;
+			int t2 = 0;
+			sscanf(tmp_cid.c_str(),"%d",&t1);
+			sscanf(max_cid.c_str(),"%d",&t2);
+			if(t1 > t2){
+				max_cid = tmp_cid;
+				max_byterate = tmp_byterate;
+			}
+
+		}
+	}
+	if(max_cid.empty() || max_byterate.empty())
+		return -1;
+	cid = max_cid;
+	bits = max_byterate;
+	if(seconds.size()>4)
+		seconds = seconds.substr(0,seconds.size()-3);
+
+	return 0;
+}
+int videoaddressfunshion::GetSingleInfo(const string& content,unsigned int index,string& hashid, string& filename){
+	Json::Reader reader;
+    Json::Value root;
+
+    if (!reader.parse(content, root, false)){
+		return -1;
+	}
+
+	const Json::Value arrayObj = root["data"]["files"];
+	if(arrayObj.size()==0)
+		return -1;
+	for (unsigned int i = 0; i < arrayObj.size() && i <= index; i++){
+		hashid = arrayObj[i]["hashid"].asString();
+		filename = arrayObj[i]["filename"].asString();
+	}
+
+	if(hashid.empty() || filename.empty())
+		return -1;
+
+	return 0;
+
+}
